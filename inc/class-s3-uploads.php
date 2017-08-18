@@ -109,13 +109,33 @@ class S3_Uploads {
 	 * to only return the relative section, to play nice with WordPress
 	 * handling.
 	 *
+	 * Issue: Permanently deleted media files #92
+	 * Issue Url: https://github.com/humanmade/S3-Uploads/issues/92
+	 * Issue Fix Url: https://github.com/humanmade/S3-Uploads/issues/92#issuecomment-270185218
+	 *
 	 * @param  string $file_path
 	 * @return string
 	 */
-	public function wp_filter_delete_file( $file_path ) {
+	public function wp_filter_delete_file($file_path) {
 		$dir = wp_upload_dir();
+		if ($this->func_caller_is('wp_delete_file')) return $file_path;
+		return str_replace(trailingslashit($dir['basedir']), '', $file_path);
+	}
 
-		return str_replace( trailingslashit( $dir['basedir'] ), '', $file_path );
+	/**
+	 * Determine whether the specified function exists in the call stack.
+	 *
+	 * Issue: Permanently deleted media files #92
+	 * Issue Url: https://github.com/humanmade/S3-Uploads/issues/92
+	 * Issue Fix Url: https://github.com/humanmade/S3-Uploads/issues/92#issuecomment-270185218
+	 *
+	 * @param string $function The function name to check.
+	 * @return bool True if the specified function is in the call stack; Otherwise false.
+	 */
+	protected function func_caller_is($function) {
+		$stack = debug_backtrace();
+		$functions = wp_list_pluck($stack, 'function');
+		return in_array($function, array_unique($functions));
 	}
 
 	public function get_s3_url() {
